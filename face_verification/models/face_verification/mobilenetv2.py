@@ -1,5 +1,7 @@
-import torch.nn as nn
 import math
+
+import torch
+import torch.nn as nn
 
 
 def conv_bn(inp, oup, stride):
@@ -114,6 +116,7 @@ class MobileNetV2(nn.Module):
         x = self.features(x)
         x = x.mean(3).mean(2)
         x = self.classifier(x)
+        x = torch.nn.functional.normalize(x, dim=1)
         return x
 
     def _initialize_weights(self):
@@ -133,8 +136,6 @@ class MobileNetV2(nn.Module):
 
 
 if __name__ == '__main__':
-    import torch
-
     mobilenetv2 = MobileNetV2()
     test_tensor = torch.zeros(1, 3, 224, 224)
 

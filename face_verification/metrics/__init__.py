@@ -1,1 +1,1 @@
-from .metrics import Metric, Accuracy
+from .metrics import Metric, Accuracy, EmbeddingAccuracy

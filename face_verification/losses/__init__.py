@@ -1,1 +1,1 @@
-from .losses import Loss, CrossEntropy, SoftmaxLoss
+from .losses import Loss, CrossEntropy

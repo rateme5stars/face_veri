@@ -1,8 +1,9 @@
 import torch.utils.data
 
 from .trainers import Trainer
-from face_verification.losses import Loss, CrossEntropy
+from face_verification.losses import Loss
 from face_verification.metrics import Metric
+from face_verification.models.face_verification import ArcFace
 from face_verification.monitors import Monitor
 
 
@@ -10,8 +11,9 @@ class ArcFaceTrainer(Trainer):
 
     def __init__(
         self,
-        arcface: torch.nn.Module,
-        loss: Loss | None = CrossEntropy(),
+        arcface: ArcFace,
+        embedder: torch.nn.Module,
+        loss: Loss | None,
         optimizer: torch.optim.Optimizer | None = None,
         metrics: list[Metric] | None = None,
         monitors: list[Monitor] | None = None,
@@ -19,7 +21,23 @@ class ArcFaceTrainer(Trainer):
             "cuda" if torch.cuda.is_available() else "cpu"
         ),
     ) -> None:
-        super().__init__(arcface, loss, optimizer, metrics, monitors, device)
+        self.arcface = arcface.to(device)
+        super().__init__(embedder, loss, optimizer, metrics, monitors, device)
+
+    def train_one_epoch(
+        self, train_loader: torch.utils.data.DataLoader
+    ) -> None:
+        progress_bar = self.tqdm(train_loader)
+        self.model.train()
+
+        for input_batch, target_batch in progress_bar:
+            self.train_one_step(input_batch, target_batch)
+            progress_bar.set_description(
+                f"Train: {self.format_results(train=True)}"
+            )
+
+        self.notify_monitors("train")
+        self.reset()
 
     def train_one_step(
         self, input_batch: torch.Tensor, target_batch: torch.Tensor
@@ -32,19 +50,31 @@ class ArcFaceTrainer(Trainer):
         input_batch = input_batch.to(self.device)
         target_batch = target_batch.to(self.device)
 
-        output_batch = self.model(input_batch, target_batch)
+        embedding_batch = self.model(input_batch)
+        output_batch = self.arcface(embedding_batch, target_batch)
         computed_loss = self.loss(output_batch, target_batch)
 
         computed_loss.backward()
         self.optimizer.step()
         self.optimizer.zero_grad()
 
-        self.update(output_batch, target_batch)
+        self.loss.update(output_batch, target_batch)
+        self.update(embedding_batch, target_batch)
 
-    def valid_one_epoch(
-        self, valid_loader: torch.utils.data.DataLoader
+    def update(
+        self,
+        output_batch: torch.Tensor,
+        target_batch: torch.Tensor,
     ) -> None:
-        pass
+        for metric in self.metrics:
+            metric.update(output_batch, target_batch)
 
-    def test(self, test_loader: torch.utils.data.DataLoader) -> None:
-        pass
+    def format_results(self, train=False) -> str:
+        loss_result_format = (
+            "" if not train else f"loss = {self.loss.result():.4f}"
+        )
+        metric_results_format = "".join(
+            f", {metric.name} = {metric.result():.4f}" for metric in self.metrics
+        )
+        results_format = loss_result_format + metric_results_format
+        return results_format

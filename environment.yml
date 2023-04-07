@@ -4,12 +4,13 @@ channels:
   - pytorch
   - nvidia
 dependencies:
-  - conda-forge::jupyterlab
-  - conda-forge::ipywidgets
-  - conda-forge::scikit-learn
-  - conda-forge::tqdm
-  - conda-forge::matplotlib
-  - conda-forge::numpy
-  - pytorch::pytorch
-  - pytorch::torchvision
+  - conda-forge::ipywidgets=0.8.4
+  - conda-forge::jupyterlab==3.6.1
+  - conda-forge::python==3.10.10
+  - conda-forge::scikit-learn==1.2.1
+  - conda-forge::tqdm==4.46.1
+  - conda-forge::matplotlib=3.7.0
+  - conda-forge::numpy=1.24.2
+  - pytorch::pytorch=1.13.1
+  - pytorch::torchvision=0.14.1
   - pytorch::pytorch-cuda=11.7

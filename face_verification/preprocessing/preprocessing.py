@@ -28,7 +28,7 @@ def split_identities(
         test_size=valid_size / (1 - test_size),
         random_state=random_state,
     )
-    return train_identities, valid_identities, test_identities
+    return train_identities, test_identities, valid_identities
 
 
 def find_paths_with_identities(

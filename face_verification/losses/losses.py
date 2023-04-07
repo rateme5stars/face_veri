@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 import torch
+
 from face_verification import one_hot_decode
 
 
@@ -45,26 +47,3 @@ class CrossEntropy(Loss):
         self, output_batch: torch.Tensor, target_batch: torch.Tensor
     ) -> torch.Tensor:
         return self._loss_fn(output_batch, one_hot_decode(target_batch))
-
-
-class SoftmaxLoss(Loss):
-
-    def __init__(
-        self,
-        margin: float = 0.5,
-        scale_factor: int = 64,
-    ) -> None:
-        super().__init__()
-        self._margin = margin
-        self._scale_factor = scale_factor
-        self._softmax = torch.nn.Softmax(dim=1)
-        self._loss_fn = torch.nn.CrossEntropyLoss()
-
-    def __call__(
-        self, output_batch: torch.Tensor, target_batch: torch.Tensor
-    ) -> torch.Tensor:
-        margins = target_batch * self._margin
-        logits = self._softmax(
-            (output_batch + margins).cos() * self._scale_factor
-        )
-        return self._loss_fn(logits, one_hot_decode(target_batch))
